@@ -1,0 +1,33 @@
+# ------------------------------------------------------------
+# Q3(i)(a): Gradient descent for f(x)=x^2 with different step sizes
+# ------------------------------------------------------------
+
+class QuadraticFn1D():
+    def f(self, x):
+        return x**2  # function value f(x)
+
+    def df(self, x):
+        return 2*x   # derivative f'(x)
+
+def gradDescent1D(fn, x0, alpha=0.15, num_iters=50):
+    x = x0
+    X = np.array([x])
+    F = np.array([fn.f(x)])
+
+    for _ in range(num_iters):
+        step = alpha * fn.df(x)
+        x = x - step
+        X = np.append(X, [x], axis=0)
+        F = np.append(F, fn.f(x))
+
+    return (X, F)
+
+fn_q3 = QuadraticFn1D()
+
+(X_a01,  F_a01)  = gradDescent1D(fn_q3, x0=1, alpha=0.1,  num_iters=50)
+(X_a001, F_a001) = gradDescent1D(fn_q3, x0=1, alpha=0.01, num_iters=50)
+(X_a101, F_a101) = gradDescent1D(fn_q3, x0=1, alpha=1.01, num_iters=50)
+
+print("Final x (alpha=0.1):",  X_a01[-1],  "Final f(x):", F_a01[-1])
+print("Final x (alpha=0.01):", X_a001[-1], "Final f(x):", F_a001[-1])
+print("Final x (alpha=1.01):", X_a101[-1], "Final f(x):", F_a101[-1])
