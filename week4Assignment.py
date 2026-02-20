@@ -20,7 +20,7 @@ def run_polyak(fn, x0, num_iters=200, f_star=0.0, eps=1e-3): # Polyak step size,
         F = np.append(F, fn.f(x))
     return F
 
-def run_rmsprop(fn, x0, num_iters=200, alpha0=0.2, beta=0.9, eps=1e-8): # RMSprop, sum = beta*sum + (1-beta)*g^2, alpha_t = alpha0/(sqrt(sum)+eps)
+def run_rmsprop(fn, x0, num_iters=200, alpha0=0.2, beta=0.9, eps=1e-5): # RMSprop, sum = beta*sum + (1-beta)*g^2, alpha_t = alpha0/(sqrt(sum)+eps)
     x = x0.copy()
     F = np.array([fn.f(x)])
     sum = np.zeros_like(x)
@@ -45,7 +45,7 @@ def run_heavy_ball(fn, x0, num_iters=200, alpha=0.01, beta=0.9):
     return F
 
 # Adam, m = beta1*m + (1-beta1)*g, v = beta2*v + (1-beta2)*g^2, bias correction: m_hat = m/(1-beta1^t), v_hat = v/(1-beta2^t), x = x - alpha * m_hat/(sqrt(v_hat)+eps)
-def run_adam(fn, x0, num_iters=200, alpha=0.1, beta1=0.9, beta2=0.999, eps=1e-8):
+def run_adam(fn, x0, num_iters=200, alpha=0.1, beta1=0.9, beta2=0.999, eps=1e-5):
     x = x0.copy()
     F = np.array([fn.f(x)])
     m = np.zeros_like(x)
@@ -63,9 +63,9 @@ def run_adam(fn, x0, num_iters=200, alpha=0.1, beta1=0.9, beta2=0.999, eps=1e-8)
     return F
 
 F_polyak = run_polyak(fn, x0, num_iters=num_iters, f_star=0.0, eps=1e-3) # Run all methods
-F_rmsprop = run_rmsprop(fn, x0, num_iters=num_iters, alpha0=0.2, beta=0.9, eps=1e-8)
+F_rmsprop = run_rmsprop(fn, x0, num_iters=num_iters, alpha0=0.2, beta=0.9, eps=1e-5)
 F_hb = run_heavy_ball(fn, x0, num_iters=num_iters, alpha=0.01, beta=0.9)
-F_adam = run_adam(fn, x0, num_iters=num_iters, alpha=0.1, beta1=0.9, beta2=0.999, eps=1e-8)
+F_adam = run_adam(fn, x0, num_iters=num_iters, alpha=0.1, beta1=0.9, beta2=0.999, eps=1e-5)
 
 plt.semilogy(F_polyak, label="Polyak")
 plt.semilogy(F_rmsprop, label="RMSprop (a0=0.2, b=0.9)")
