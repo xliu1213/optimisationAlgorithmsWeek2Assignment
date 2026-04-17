@@ -99,3 +99,42 @@ plot_results(X, F, x0, feasible_set='X1')
 
 # Q1 (e)
 plot_results(X2, F2, x0, feasible_set='X2')
+
+# Q2 (b)
+def f_q2(x): # Objective function for Q2
+    x1, x2 = x
+    return (x1 - 0.2)**2 + (x2 - 2.0)**2
+
+def g1(x): # Constraint g1(x) <= 0  <=>  x1 >= 0.5
+    x1, _ = x
+    return 0.5 - x1
+
+def g2(x): # Constraint g2(x) <= 0  <=>  x1*x2 >= 1
+    x1, x2 = x
+    return 1.0 - x1 * x2
+
+def F_q2(x, lam1, lam2): # Penalised objective
+    return f_q2(x) + lam1 * max(0.0, g1(x)) + lam2 * max(0.0, g2(x))
+
+def grad_F_q2(x, lam1, lam2): # Gradient of penalised objective
+    x1, x2 = x
+    grad = np.array([2 * (x1 - 0.2), 2 * (x2 - 2.0)], dtype=float) # Gradient of original objective f
+    if g1(x) > 0: # Add penalty gradient for g1 if active
+        grad += np.array([-lam1, 0.0], dtype=float)
+    if g2(x) > 0: # Add penalty gradient for g2 if active
+        grad += np.array([-lam2 * x2, -lam2 * x1], dtype=float)
+    return grad
+
+def gradient_descent_penalty(f_pen, grad_pen, x0, lam1, lam2, alpha=0.05, num_iters=100):
+    x = np.array(x0, dtype=float)
+    X = [x.copy()]
+    F_vals = [f_pen(x, lam1, lam2)]
+    for _ in range(num_iters):
+        x = x - alpha * grad_pen(x, lam1, lam2)
+        X.append(x.copy())
+        F_vals.append(f_pen(x, lam1, lam2))
+    return np.array(X), np.array(F_vals)
+
+x0_q2 = np.array([1.4, 0.6], dtype=float)
+X_small, F_small = gradient_descent_penalty(f_pen=F_q2, grad_pen=grad_F_q2, x0=x0_q2, lam1=0.5, lam2=0.5, alpha=0.05, num_iters=100) # Small penalty weights
+X_large, F_large = gradient_descent_penalty(f_pen=F_q2, grad_pen=grad_F_q2, x0=x0_q2, lam1=4.0, lam2=4.0, alpha=0.05, num_iters=100) # Large penalty weights
