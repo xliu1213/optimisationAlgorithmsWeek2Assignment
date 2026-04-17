@@ -138,3 +138,33 @@ def gradient_descent_penalty(f_pen, grad_pen, x0, lam1, lam2, alpha=0.05, num_it
 x0_q2 = np.array([1.4, 0.6], dtype=float)
 X_small, F_small = gradient_descent_penalty(f_pen=F_q2, grad_pen=grad_F_q2, x0=x0_q2, lam1=0.5, lam2=0.5, alpha=0.05, num_iters=100) # Small penalty weights
 X_large, F_large = gradient_descent_penalty(f_pen=F_q2, grad_pen=grad_F_q2, x0=x0_q2, lam1=4.0, lam2=4.0, alpha=0.05, num_iters=100) # Large penalty weights
+
+# Q2 (c)
+def G_q2(x, lam1, lam2): # Primal-dual objective
+    return f_q2(x) + lam1 * g1(x) + lam2 * g2(x)
+
+def grad_G_q2(x, lam1, lam2): # Gradient of primal-dual objective
+    x1, x2 = x
+    return np.array([
+        2 * (x1 - 0.2) - lam1 - lam2 * x2,
+        2 * (x2 - 2.0) - lam2 * x1
+    ], dtype=float)
+
+def primal_dual_q2(x0, alpha=0.06, beta=0.08, num_iters=100, lam0=None):
+    x = np.array(x0, dtype=float)
+    lam = np.array(lam0, dtype=float)
+    X = [x.copy()]
+    F_vals = [f_q2(x)]
+    G_vals = [np.array([g1(x), g2(x)], dtype=float)]
+    Lam_vals = [lam.copy()]
+    for _ in range(num_iters):
+        x = x - alpha * grad_G_q2(x, lam[0], lam[1])
+        lam[0] = max(0.0, lam[0] + beta * g1(x))
+        lam[1] = max(0.0, lam[1] + beta * g2(x))
+        X.append(x.copy())
+        F_vals.append(f_q2(x))
+        G_vals.append(np.array([g1(x), g2(x)], dtype=float))
+        Lam_vals.append(lam.copy())
+    return np.array(X), np.array(F_vals), np.array(G_vals), np.array(Lam_vals)
+
+X_pd, F_pd, G_pd, Lam_pd = primal_dual_q2(x0=x0_q2, alpha=0.06, beta=0.08, num_iters=100, lam0=[0.0, 0.0])
