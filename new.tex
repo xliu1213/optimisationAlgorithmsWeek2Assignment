@@ -1,0 +1,47 @@
+\begin{lstlisting}[caption={Python implementation of the linear regression quadratic loss.}]
+class LinearRegressionFn(): # Benchmark A: Linear Regression Quadratic Loss
+    def __init__(self, m=1000, seed=0, noise_std=0.1):
+        np.random.seed(seed)
+        self.m = m
+        self.theta_star = np.array([3.0, 4.0])
+        self.X = np.random.randn(m, 2)
+        noise = noise_std * np.random.randn(m)
+        self.y = self.X @ self.theta_star + noise
+
+    def f(self, theta):
+        err = self.X @ theta - self.y
+        return 0.5 * np.mean(err**2)
+
+    def df(self, theta):
+        err = self.X @ theta - self.y
+        return (self.X.T @ err) / self.m
+\end{lstlisting}
+
+Listing~\ref{lst:1} shows the implementation of the linear regression quadratic loss used in the assignment. The synthetic dataset has \(m=1000\) samples and two parameters, with
+\[
+y^{(i)}=\theta^{\star T}x^{(i)}+\varepsilon^{(i)}.
+\]
+In the code, \texttt{self.X} stores the input vectors, \texttt{self.theta\_star} stores the parameter values used to generate the data, and \texttt{self.y} stores the corresponding outputs.
+
+The function \texttt{f(self, theta)} implements the linear regression loss:
+\[
+J(\theta)=\frac{1}{2m}\sum_{i=1}^{m}\big(\theta^T x^{(i)}-y^{(i)}\big)^2.
+\]
+In the code, \texttt{err = self.X @ theta - self.y} computes the term \(\theta^T x^{(i)} - y^{(i)}\) for all \(i\), and
+\[
+\texttt{return 0.5 * np.mean(err**2)}
+\]
+computes the average of the squared terms multiplied by \(\frac{1}{2}\), which matches the definition of \(J(\theta)\).
+
+The function \texttt{df(self, theta)} implements the gradient of the quadratic loss. Starting from
+\[
+J(\theta)=\frac{1}{2m}\sum_{i=1}^{m}\big(\theta^T x^{(i)}-y^{(i)}\big)^2,
+\]
+taking the derivative gives
+\[
+\nabla J(\theta)=\frac{1}{m}X^T(X\theta-y).
+\]
+That is why the code computes \texttt{err = self.X @ theta - self.y} and then returns
+\[
+\texttt{(self.X.T @ err) / self.m}.
+\]
