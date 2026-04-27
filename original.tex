@@ -1,55 +1,79 @@
-\begin{lstlisting}[caption={Definition of Benchmark A: linear regression quadratic loss.}]
-class LinearRegressionFn(): # Benchmark A: Linear Regression Quadratic Loss
-    def __init__(self, m=1000, seed=0, noise_std=0.1):
-        np.random.seed(seed)
-        self.m = m
-        self.theta_star = np.array([3.0, 4.0])
-        self.X = np.random.randn(m, 2)
-        noise = noise_std * np.random.randn(m)
-        self.y = self.X @ self.theta_star + noise
+\subsection*{Question 1 (e)}
+The five methods Polyak, Adagrad, RMSprop, Heavy Ball and Gradient Descent baseline show clear differences in convergence speed, smoothness, and stability across the three benchmarks Linear Regression, Toy Neural Network, and Rosenbrock.
+\paragraph{Convergence speed.}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1A_obj.png}
+    \caption{Objective value versus iteration for Linear Regression Quadratic Loss.}
+    \label{fig:q1A_obj}
+\end{figure}
+Figure~\ref{fig:q1A_obj} shows that, for Linear Regression, Polyak (blue) and Adagrad (orange) reduce the objective very quickly in the early iterations (approximately 3rd or 4th iteration), reaching values close to zero much sooner than the constant-step gradient descent baseline (purple) around approximately the 37th iteration. RMSprop (green) also converges rapidly, though less fast than the previous two at around the 12th iteration. Its trajectory is slightly less smooth, an example can be seen from the small bumps between the 68th and 74th iteration. Heavy Ball (red) initially makes fast progress (though not as fast as the other three), but oscillations delay its final convergence to around the 36th iteration, at pretty much the same time as the baseline. In contrast, the baseline (purple) decreases steadily but more slowly. Overall, this indicates that Polyak and Adagrad have the fastest convergence speed on Linear Regression, while RMSprop is also competitive and Heavy Ball and the baseline are slower.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1B_obj.png}
+    \caption{Objective value versus iteration for the Toy Neural Network benchmark.}
+    \label{fig:q1B_obj}
+\end{figure}
+Figure~\ref{fig:q1B_obj} shows that, for the Toy Neural Network, Adagrad (orange), RMSprop (green), Heavy Ball (red), and the baseline (purple) all descend efficiently in the early iterations, with Heavy Ball oscillating up to an objective value of 4, but with each oscillation getting smaller than the previous one and the values settle toward a stable minimum after around 60 iterations. In contrast, Polyak (blue) exhibits repeated large spikes. These spikes interrupt progress and make Polyak less effective despite its aggressive step sizes. Overall, this indicates that Adagrad, RMSprop, Heavy Ball, and the baseline have good convergence speed on the Toy Neural Network, while Polyak is slower in practice because its large spikes repeatedly interrupt convergence.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1C_obj.png}
+    \caption{Objective value versus iteration for the Rosenbrock function.}
+    \label{fig:q1C_obj}
+\end{figure}
+Figure~\ref{fig:q1C_obj} shows that, for Rosenbrock, all methods, namely Polyak (blue), Adagrad (orange), RMSprop (green), Heavy Ball (red), and the baseline (purple), quickly reach values that appear indistinguishable from zero at this scale, making differences in convergence speed less visible. Overall, this plot does not provide enough visual separation to rank convergence speed clearly for Rosenbrock, although all methods appear to converge rapidly at the plotted scale.
 
-    def f(self, theta):
-        err = self.X @ theta - self.y
-        return 0.5 * np.mean(err**2)
+\paragraph{Smoothness.}
+Figure~\ref{fig:q1A_obj} shows that, on Linear Regression, Adagrad has the smoothest objective-value descent: the orange curve drops quickly to near zero without visible oscillations or later spikes. Figure~\ref{fig:q1A_steps} helps explain this behaviour. Adagrad's two coordinate-wise step sizes remain small and almost flat, so its updates are controlled and consistent across iterations. This contrasts with Polyak (blue), whose adaptive step size has repeated large spikes in Figure~\ref{fig:q1A_steps}. These spikes correspond to the small but persistent fluctuations observed in its objective curve in Figure~\ref{fig:q1A_obj} (most obvious around the 40th-60th iterations), indicating that its updates are less stable even after reaching the minimum region. RMSprop exhibits intermediate behaviour. In Figure~\ref{fig:q1A_steps}, its coordinate-wise step sizes increase gradually and then drop around iterations 65--75, showing more variation than Adagrad but far less than Polyak. This is reflected in Figure~\ref{fig:q1A_obj}, where the RMSprop curve is generally smooth but contains minor bumps later in the iterations, also around iterations 65--75. Adagrad appears smooth because its objective curve decreases cleanly while its step sizes remain stable. Polyak's large step-size fluctuations lead to small oscillations in the objective, and RMSprop's moderate variation in step size results in slightly less smooth but still controlled convergence.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1A_steps.png}
+    \caption{Adaptive step-size evolution for the Linear Regression benchmark.}
+    \label{fig:q1A_steps}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1B_contour.png}
+    \caption{Contour plot with optimisation trajectories for the Toy Neural Network benchmark.}
+    \label{fig:q1B_contour}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1B_steps.png}
+    \caption{Adaptive step-size evolution for the Toy Neural Network benchmark.}
+    \label{fig:q1B_steps}
+\end{figure}
+Figures~\ref{fig:q1B_obj}, \ref{fig:q1B_contour}, and \ref{fig:q1B_steps} show that, on the Toy Neural Network, Polyak (blue) is clearly the least smooth method. Its objective curve in Figure~\ref{fig:q1B_obj} contains repeated large spikes, its trajectory in Figure~\ref{fig:q1B_contour} shows large erratic jumps across the domain, and its step sizes in Figure~\ref{fig:q1B_steps} fluctuate dramatically. Together, these indicate highly unstable updates. Adagrad (orange) is the smoothest method. Its objective curve in Figure~\ref{fig:q1B_obj} decreases steadily without noticeable spikes, its trajectory in Figure~\ref{fig:q1B_contour} remains tightly concentrated around the basin, and its step sizes in Figure~\ref{fig:q1B_steps} are small and stable. Compared to the gradient descent baseline (purple), Adagrad is similarly smooth in its objective behaviour. Its step sizes in Figure~\ref{fig:q1B_steps} remain smaller than RMSprop and more stable across iterations. In contrast, RMSprop exhibits more aggressive adaptation, with one coordinate’s step size increasing significantly in later iterations, which leads to slightly less uniform behaviour.
 
-    def df(self, theta):
-        err = self.X @ theta - self.y
-        return (self.X.T @ err) / self.m
-\end{lstlisting}
+RMSprop (green) also exhibits very smooth behaviour. Its objective curve (green) in Figure~\ref{fig:q1B_obj} decreases rapidly and then remains close to the minimum with only a very small bump, indicating stable convergence with minimal oscillation. Its trajectory (green) in Figure~\ref{fig:q1B_contour} moves quickly into the basin and then stays tightly concentrated near the minimiser, showing only slight adjustment before settling. In Figure~\ref{fig:q1B_steps}, its coordinate-wise step sizes (red and purple curves) change gradually, with one coordinate increasing in later iterations but without sudden spikes. This shows that RMSprop maintains smooth objective behaviour even with some variation in step size, although its updates are slightly less uniform than Adagrad (orange). Compared to the baseline, RMSprop is still smooth overall but less uniform. 
 
-Listing 1 defines Benchmark A from the assignment. The synthetic dataset has \(m=1000\) samples and two parameters, with
-\[
-y^{(i)}=\theta^{\star T}x^{(i)}+\varepsilon^{(i)}.
-\]
-In the code, \texttt{self.X} stores the input vectors, \texttt{self.theta\_star} is the true parameter vector \([3,4]^T\), and \texttt{self.y} stores the noisy outputs.
+Heavy Ball (red) is relatively controlled but less smooth than Adagrad. Its objective curve in Figure~\ref{fig:q1B_obj} shows pronounced oscillations in the early iterations, which gradually decay as the method converges. Its trajectory in Figure~\ref{fig:q1B_contour} remains within the basin but exhibits clear oscillatory movements around the minimiser, reflecting the effect of momentum. Compared to the gradient descent baseline (purple), Heavy Ball does not provide a clear advantage in early convergence, and its oscillatory behaviour delays stable settling, making it less smooth overall. The gradient descent baseline (purple) provides a useful reference point. Its objective curve in Figure~\ref{fig:q1B_obj} decreases steadily without spikes, and its trajectory in Figure~\ref{fig:q1B_contour} moves smoothly toward the minimum without large deviations. This confirms that while it is slower, it is highly stable and smooth compared to the adaptive methods.
 
-The function \texttt{f(self, theta)} implements the linear regression loss:
-\[
-J(\theta)=\frac{1}{2m}\sum_{i=1}^{m}\big(\theta^T x^{(i)}-y^{(i)}\big)^2.
-\]
-If I define the residual vector
-\[
-r=X\theta-y,
-\]
-then
-\[
-J(\theta)=\frac{1}{2m}r^Tr,
-\]
-which is exactly what the line
-\[
-\texttt{return 0.5 * np.mean(err**2)}
-\]
-computes.
+Figures~\ref{fig:q1B_obj}, \ref{fig:q1B_contour}, and \ref{fig:q1B_steps} show that, on the Toy Neural Network, Polyak (blue) is clearly the least smooth method. Its objective curve contains repeated spikes, its trajectory shows large erratic jumps, and its step sizes fluctuate dramatically. Adagrad (orange) remains the smoothest, with stable and gradually decreasing step sizes. RMSprop (green) is smoother than Polyak but less uniform than Adagrad. Heavy Ball (red) is relatively controlled but still exhibits mild oscillation.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1C_contour.png}
+    \caption{Contour plot with optimisation trajectories for the Rosenbrock function.}
+    \label{fig:q1C_contour}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q1Figures/q1C_steps.png}
+    \caption{Adaptive step-size evolution for the Rosenbrock function.}
+    \label{fig:q1C_steps}
+\end{figure}
+Figures~\ref{fig:q1C_obj}, \ref{fig:q1C_contour}, and \ref{fig:q1C_steps} show that, for Rosenbrock, smoothness is harder to assess from the objective plot alone. In Figure~\ref{fig:q1C_obj}, the objective curves for all methods overlap at this scale, indicating that they converge to very similar values within the given number of iterations. Figure~\ref{fig:q1C_contour} shows that all optimisation trajectories overlap at $(1,1)$. This overlap is not due to compression along the valley, but rather because all methods have already converged to the same region, making their later trajectories indistinguishable. Figure~\ref{fig:q1C_steps} provides additional insight into the adaptive methods. The step sizes for Polyak (blue), Adagrad (orange and green), and RMSprop (red and purple) appear relatively stable at this plotting scale, with no large oscillations visible. This suggests that, for this benchmark and choice of parameters, all methods behave in a stable and controlled manner after reaching the minimiser. Overall, the plots indicate that all methods converge reliably on Rosenbrock, but they do not provide enough visual detail to distinguish differences in smoothness. A more detailed view, such as a zoomed-in trajectory or log-scale objective plot, would be required to compare their behaviour more precisely.
 
-The function \texttt{df(self, theta)} implements the gradient of the quadratic loss. Starting from
-\[
-J(\theta)=\frac{1}{2m}(X\theta-y)^T(X\theta-y),
-\]
-the derivative is
-\[
-\nabla J(\theta)=\frac{1}{m}X^T(X\theta-y).
-\]
-That is why the code computes the residual \texttt{err = self.X @ theta - self.y} and then returns
-\[
-\texttt{(self.X.T @ err) / self.m}.
-\]
+\paragraph{Stability.}
+The most stable methods overall are Adagrad (orange) and the constant-step gradient descent baseline (purple). Figures~\ref{fig:q1A_obj} and \ref{fig:q1A_steps} show that, on Linear Regression, both methods descend steadily without major disruptions. In Figure~\ref{fig:q1A_obj}, their objective curves decrease smoothly without spikes or oscillations. In Figure~\ref{fig:q1A_steps}, Adagrad’s coordinate-wise step sizes (orange and green) remain small and nearly constant, indicating controlled updates, while the baseline uses a fixed step size, which also results in stable behaviour. RMSprop (green) is also relatively stable on this benchmark. Its objective curve in Figure~\ref{fig:q1A_obj} decreases smoothly with only very minor fluctuations (e.g., small bumps around iterations 68--74), and its step sizes in Figure~\ref{fig:q1A_steps} vary gradually with 1-3 spikes. This indicates stable but slightly more adaptive behaviour compared to Adagrad. 
+
+In contrast, Polyak (blue) is less stable. Although its objective curve in Figure~\ref{fig:q1A_obj} converges quickly, it exhibits small but persistent fluctuations. This behaviour is explained by Figure~\ref{fig:q1A_steps}, where the step size shows repeated large spikes, indicating highly variable update magnitudes across iterations. Heavy Ball (red) shows moderate overshooting. In Figure~\ref{fig:q1A_obj}, its objective curve initially decreases but then exhibits noticeable oscillations, temporarily increasing before settling. This reflects overshooting of the minimiser. Although Heavy Ball does not have an adaptive step-size plot, its oscillatory behaviour is consistent with the momentum term causing updates to overshoot and then correct. The same behaviour is visible in the contour trajectory in Figure~\ref{fig:q1B_contour}, where the Heavy Ball path remains near the basin but moves back and forth around the low-value region rather than approaching it as directly as Adagrad or the baseline. Overall, for Linear Regression, Adagrad and the baseline are the most stable, RMSprop is also stable but slightly more variable, while Polyak and Heavy Ball exhibit instability due to fluctuating and oscillatory updates.
+
+Figures~\ref{fig:q1B_obj}, \ref{fig:q1B_contour}, and \ref{fig:q1B_steps} show that, on the Toy Neural Network, Adagrad (orange) and the baseline (purple) again demonstrate strong stability. In Figure~\ref{fig:q1B_obj}, both exhibit smooth objective-value decay without large spikes. In Figure~\ref{fig:q1B_contour}, their trajectories remain tightly concentrated near the basin and move directly toward the minimiser. In Figure~\ref{fig:q1B_steps}, Adagrad’s step sizes remain small and stable, while the baseline’s fixed step size again ensures consistent updates even though it's not on adaptive step plot. RMSprop (green) is also stable on this benchmark. Its objective curve in Figure~\ref{fig:q1B_obj} is smooth with only a small bump, its trajectory in Figure~\ref{fig:q1B_contour} stays close to the basin with only slight variation, and its step sizes in Figure~\ref{fig:q1B_steps} mostly remain flat and change gradually without extreme spikes at the end. 
+
+In contrast, Polyak (blue) is clearly unstable. Its objective curve in Figure~\ref{fig:q1B_obj} contains repeated large spikes, its trajectory in Figure~\ref{fig:q1B_contour} shows large erratic jumps across the domain, and its step sizes in Figure~\ref{fig:q1B_steps} exhibit extreme spikes. Heavy Ball (red) shows oscillatory but bounded behaviour. In Figure~\ref{fig:q1B_obj}, its objective oscillates significantly in early iterations before gradually settling, and in Figure~\ref{fig:q1B_contour}, its trajectory remains within the basin but moves back and forth around the minimiser due to momentum. Overall, for the Toy Neural Network, Adagrad and the baseline remain the most stable, RMSprop is also stable with minor variation, Heavy Ball is moderately stable but oscillatory, and Polyak is the least stable due to large fluctuations.
+
+Figures~\ref{fig:q1C_obj}, \ref{fig:q1C_contour}, and \ref{fig:q1C_steps} show that, for Rosenbrock, stability is more difficult to distinguish. In Figure~\ref{fig:q1C_obj}, all methods converge rapidly and their objective curves overlap at this scale, indicating similar final behaviour. In Figure~\ref{fig:q1C_contour}, all trajectories quickly move toward the minimiser near $(1,1)$ and overlap almost completely, suggesting that all methods remain within the stable region once convergence is reached. In Figure~\ref{fig:q1C_steps}, the adaptive step sizes for Polyak (blue), Adagrad (orange and green), and RMSprop (red and purple) appear relatively stable without large oscillations at this scale. However, the lack of visible variation is mainly due to the plotting scale rather than identical behaviour. Overall, for Rosenbrock, all methods appear stable in reaching and remaining near the minimiser, but the plots do not provide enough detail to clearly rank their relative stability.
+
+\paragraph{Overall comparison.}
+Overall, Adagrad (orange) provides the best balance between convergence speed, smoothness, and stability. RMSprop (green) is competitive but less consistent. Heavy Ball (red) accelerates convergence compared to baseline but introduces oscillations. The constant-step baseline (purple) is slower but reliable. Polyak (blue) performs well on Linear Regression but is highly unstable on the Toy Neural Network. These results show that no single method dominates in all settings, although Adagrad is the most consistently robust across the three benchmarks.
