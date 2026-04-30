@@ -270,3 +270,161 @@ plt.title('Benchmark C: Adaptive step-size evolution')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+# Q2 (I): Nesterov Momentum / Acceleration
+def nesterov(fn, x0, alpha=0.01, beta_max=0.9, num_iters=150):
+    x = np.array(x0, dtype=float)
+    z = np.zeros_like(x)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    B = np.array([]) # store beta values
+    for k in range(num_iters):
+        t = k + 1
+        beta = min((t - 1) / (t + 2), beta_max)
+        grad = fn.df(x + beta*z)
+        z = beta*z - alpha*grad
+        x = x + z
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+        B = np.append(B, beta)
+    return (X, F, B)
+
+(XA_nag, FA_nag, BA_nag) = nesterov(fnA, x0=np.array([1.0, 1.0]), alpha=0.06, beta_max=0.90, num_iters=150) # Run Nesterov on Benchmark A, B, and C
+(XB_nag, FB_nag, BB_nag) = nesterov(fnB, np.array([1.0, 1.0]), 0.035, 0.92, 150)
+(XC_nag, FC_nag, BC_nag) = nesterov(fnC, np.array([1.0, 1.0]), 0.0007, 0.90, 150)
+
+# Q2 (II): Adam
+def adam(fn, x0, alpha=0.01, beta1=0.9, beta2=0.999, eps=1.0e-8, num_iters=150):
+    x = np.array(x0, dtype=float)
+    m = np.zeros_like(x) # first moment estimate
+    v = np.zeros_like(x) # second moment estimate
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    for k in range(num_iters):
+        t = k + 1
+        grad = fn.df(x)
+        m = beta1*m + (1 - beta1)*grad
+        v = beta2*v + (1 - beta2)*(grad**2)
+        m_hat = m / (1 - beta1**t)
+        v_hat = v / (1 - beta2**t)
+        x = x - alpha * m_hat / (np.sqrt(v_hat) + eps)
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+    return (X, F)
+
+(XA_adam, FA_adam) = adam(fnA, np.array([1.0, 1.0]), 0.12, 0.82, 0.999, 1.0e-8, 150) # Run Adam on Benchmark A, B, and C
+(XB_adam, FB_adam) = adam(fnB, np.array([1.0, 1.0]), 0.08, 0.80, 0.999, 1.0e-8, 150)
+(XC_adam, FC_adam) = adam(fnC, np.array([1.0, 1.0]), 0.006, 0.80, 0.999, 1.0e-8, 150)
+
+# Q2 (III): Mini-Batch Stochastic Gradient Descent
+def miniBatchSGD(fn, theta0, alpha=0.06, batch_size=5, epochs=50):
+    theta = theta0.copy()
+    Theta = np.array([theta])
+    Loss = np.array([fn.f(theta)])
+    m = fn.m
+    X = fn.X
+    y = fn.y
+    for _ in range(epochs):
+        perm = np.random.permutation(m) # shuffle once per epoch
+        Xs = X[perm]
+        ys = y[perm]
+        for i in range(0, m, batch_size):
+            Xb = Xs[i:i+batch_size]
+            yb = ys[i:i+batch_size]
+            r = Xb @ theta - yb
+            grad = (1/len(Xb)) * (Xb.T @ r)
+            theta = theta - alpha*grad
+            Theta = np.append(Theta, [theta.copy()], axis=0)
+            Loss = np.append(Loss, fn.f(theta))
+    return Theta, Loss
+
+(XA_sgd_b5, FA_sgd_b5) = miniBatchSGD(fnA, np.array([1.0, 1.0]), 0.06, 5, 50) # Run Mini-Batch SGD on Benchmark A
+(XA_sgd_b40, FA_sgd_b40) = miniBatchSGD(fnA, np.array([1.0, 1.0]), 0.06, 40, 50)
+
+# Q2 (IV): SGD with Noise
+fnA_noisy = LinearRegressionFn(m=1000, seed=0, noise_std=0.6) # original noise_std=0.1, increased by factor 6
+(XA_noisy_sgd_b5, FA_noisy_sgd_b5) = miniBatchSGD(fnA_noisy, np.array([1.0, 1.0]), 0.06, 5, 50) # Run noisy Mini-Batch SGD on Benchmark A
+(XA_noisy_sgd_b40, FA_noisy_sgd_b40) = miniBatchSGD(fnA_noisy, np.array([1.0, 1.0]), 0.06, 40, 50)
+
+# Q2 constant step-size Gradient Descent baseline
+(XA_gd_q2, FA_gd_q2) = gradDescent(fnA, np.array([1.0, 1.0]), 0.08, 150)
+(XB_gd_q2, FB_gd_q2) = gradDescent(fnB, np.array([1.0, 1.0]), 0.06, 150)
+(XC_gd_q2, FC_gd_q2) = gradDescent(fnC, np.array([1.0, 1.0]), 0.0012, 150)
+
+# Q2 (b): Objective value versus iteration for Nesterov, Adam, and GD baseline
+iters_150 = np.arange(151)
+plt.figure() # Benchmark A: Linear Regression
+plt.plot(iters_150, FA_nag, label='Nesterov')
+plt.plot(iters_150, FA_adam, label='Adam')
+plt.plot(iters_150, FA_gd_q2, label='GD baseline')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Benchmark A: Objective value vs iteration')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure() # Benchmark B: Toy Neural Network
+plt.plot(iters_150, FB_nag, label='Nesterov')
+plt.plot(iters_150, FB_adam, label='Adam')
+plt.plot(iters_150, FB_gd_q2, label='GD baseline')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Benchmark B: Objective value vs iteration')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure() # Benchmark C: Rosenbrock
+plt.plot(iters_150, FC_nag, label='Nesterov')
+plt.plot(iters_150, FC_adam, label='Adam')
+plt.plot(iters_150, FC_gd_q2, label='GD baseline')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Benchmark C: Objective value vs iteration')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q2 (c): Contour plots with optimisation trajectories
+plotContourWithTrajectories( # Benchmark B: Toy Neural Network
+    fnB,
+    x1_range=(-1.5, 2.5),
+    x2_range=(0.5, 3.5),
+    trajectories=[XB_nag, XB_adam, XB_gd_q2],
+    labels=['Nesterov', 'Adam', 'GD baseline'],
+    title='Benchmark B: Contour plot with optimisation trajectories'
+)
+
+plotContourWithTrajectories( # Benchmark C: Rosenbrock
+    fnC,
+    x1_range=(-1.5, 1.5),
+    x2_range=(-0.5, 2.0),
+    trajectories=[XC_nag, XC_adam, XC_gd_q2],
+    labels=['Nesterov', 'Adam', 'GD baseline'],
+    title='Benchmark C: Contour plot with optimisation trajectories'
+)
+
+# Q2 (d): Mini-Batch SGD loss comparison, batch size 5 versus batch size 40
+plt.figure()
+plt.semilogy(FA_sgd_b5, label='SGD, batch size 5')
+plt.semilogy(FA_sgd_b40, label='SGD, batch size 40')
+plt.xlabel('Update')
+plt.ylabel('Loss')
+plt.title('Benchmark A: Mini-Batch SGD loss comparison')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q2 (e): Effect of increased output noise on Mini-Batch SGD
+plt.figure()
+plt.semilogy(FA_sgd_b5, label='Original noise, batch size 5')
+plt.semilogy(FA_sgd_b40, label='Original noise, batch size 40')
+plt.semilogy(FA_noisy_sgd_b5, label='Higher noise, batch size 5')
+plt.semilogy(FA_noisy_sgd_b40, label='Higher noise, batch size 40')
+plt.xlabel('Update')
+plt.ylabel('Loss')
+plt.title('Benchmark A: Mini-Batch SGD under original and higher noise')
+plt.legend()
+plt.grid(True)
+plt.show()
