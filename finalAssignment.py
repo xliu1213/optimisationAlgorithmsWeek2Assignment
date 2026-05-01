@@ -905,3 +905,178 @@ plt.title('Q5 Task 5: Constraint violation (first 30 iterations)')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+# Q6 (II): Frank-Wolfe for an Interior Optimum
+class InteriorFrankWolfeFn(): # f(x1, x2) = (x1 - 1)^2 + (x2 - 5)^2
+    def f(self, x):
+        x1, x2 = x[0], x[1]
+        return (x1 - 1)**2 + (x2 - 5)**2
+
+    def df(self, x):
+        x1, x2 = x[0], x[1]
+        d1 = 2*(x1 - 1)
+        d2 = 2*(x2 - 5)
+        return np.array([d1, d2])
+
+def frankWolfeLinearStepQ6(grad): # solve z in arg min_{x in X} grad^T x
+    g1, g2 = grad[0], grad[1]
+    if g1 > 0:
+        z1 = 0.5
+    else:
+        z1 = 5.0
+    if g2 > 0:
+        z2 = -5.0
+    else:
+        z2 = 10.0
+    return np.array([z1, z2])
+
+def frankWolfeQ6(fn, x0, beta=0.90, num_iters=180):
+    x = np.array(x0, dtype=float)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    Z = np.empty((0, len(x))) # store z_k values
+    for _ in range(num_iters):
+        grad = fn.df(x)
+        z = frankWolfeLinearStepQ6(grad)
+        x = beta*x + (1 - beta)*z
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+        Z = np.append(Z, [z.copy()], axis=0)
+    return (X, F, Z)
+
+fnQ6_int = InteriorFrankWolfeFn()
+(X_fw_090, F_fw_090, Z_fw_090) = frankWolfeQ6(fnQ6_int, x0=np.array([1.0, 1.0]), beta=0.90, num_iters=180)
+(X_fw_0985, F_fw_0985, Z_fw_0985) = frankWolfeQ6(fnQ6_int, x0=np.array([1.0, 1.0]), beta=0.985, num_iters=180)
+
+# Q6 (III): Frank-Wolfe for a Boundary Optimum
+class BoundaryFrankWolfeFn(): # f(x1, x2) = x1^2 + x2^2
+    def f(self, x):
+        x1, x2 = x[0], x[1]
+        return x1**2 + x2**2
+
+    def df(self, x):
+        x1, x2 = x[0], x[1]
+        return np.array([2*x1, 2*x2])
+
+fnQ6_bound = BoundaryFrankWolfeFn()
+(X_fw_bound, F_fw_bound, Z_fw_bound) = frankWolfeQ6(fnQ6_bound, x0=np.array([3.0, 3.0]), beta=0.93, num_iters=140)
+
+# Q6 Task 1: Feasible region and contours of the linear objective
+def linearObjectiveQ6(x): # f(x) = a^T x, a = [1, 2]
+    return x[0] + 2*x[1]
+
+x1_values = np.linspace(0.5, 5, 200)
+x2_values = np.linspace(-5, 10, 200)
+X1, X2 = np.meshgrid(x1_values, x2_values)
+Z_linear = X1 + 2*X2
+
+plt.figure()
+plt.contour(X1, X2, Z_linear, levels=25)
+plt.fill_between([0.5, 5], -5, 10, alpha=0.15, label='Feasible region X')
+plt.plot([0.5, 5, 5, 0.5, 0.5], [-5, -5, 10, 10, -5], linewidth=2, label='Boundary of X')
+plt.scatter([0.5], [-5], marker='x', s=80, label='Linear programme solution')
+plt.xlim(0.4, 5.2)
+plt.ylim(-5.5, 10.5)
+plt.xlabel('x1')
+plt.ylabel('x2')
+plt.title('Q6 Task 1: Feasible region and contours of f(x) = x1 + 2x2')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q6 Task 2: Frank-Wolfe convergence curves for the interior-optimum case
+iters_q6_int = np.arange(181)
+plt.figure()
+plt.plot(iters_q6_int, F_fw_090, label='Frank-Wolfe beta = 0.90')
+plt.plot(iters_q6_int, F_fw_0985, label='Frank-Wolfe beta = 0.985')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Q6 Task 2: Frank-Wolfe convergence curves for interior optimum')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q6 Task 3: Contour plots showing the Frank-Wolfe trajectories
+def plotQ6FeasibleBox():
+    plt.plot([0.5, 5, 5, 0.5, 0.5], [-5, -5, 10, 10, -5], linewidth=2, label='Boundary of X')
+
+def plotQ6ContourTrajectory(fn, x1_range, x2_range, trajectories, labels, title):
+    xx1 = np.linspace(x1_range[0], x1_range[1], 250)
+    xx2 = np.linspace(x2_range[0], x2_range[1], 250)
+    X1, X2 = np.meshgrid(xx1, xx2)
+    Z = np.zeros_like(X1)
+    for i in range(X1.shape[0]):
+        for j in range(X1.shape[1]):
+            Z[i, j] = fn.f(np.array([X1[i, j], X2[i, j]]))
+    plt.figure()
+    plt.contour(X1, X2, Z, levels=30)
+    plotQ6FeasibleBox()
+    for X, label in zip(trajectories, labels):
+        plt.plot(X[:, 0], X[:, 1], marker='o', markersize=2, linewidth=1.5, label=label)
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+plotQ6ContourTrajectory(
+    fnQ6_int,
+    x1_range=(0.4, 5.2),
+    x2_range=(-5.5, 10.5),
+    trajectories=[X_fw_090, X_fw_0985],
+    labels=['Frank-Wolfe beta = 0.90', 'Frank-Wolfe beta = 0.985'],
+    title='Q6 Task 3: Frank-Wolfe trajectories for interior optimum'
+)
+
+plotQ6ContourTrajectory(
+    fnQ6_bound,
+    x1_range=(0.4, 5.2),
+    x2_range=(-5.5, 10.5),
+    trajectories=[X_fw_bound],
+    labels=['Frank-Wolfe beta = 0.93'],
+    title='Q6 Task 3: Frank-Wolfe trajectory for boundary optimum'
+)
+
+# Q6 Task 4: Evolution of x_k and z_k versus iteration
+iters_q6_int = np.arange(181)
+iters_q6_int_z = np.arange(1, 181)
+
+plt.figure()
+plt.plot(iters_q6_int, X_fw_090[:, 0], label='x1, beta = 0.90')
+plt.plot(iters_q6_int, X_fw_090[:, 1], label='x2, beta = 0.90')
+plt.plot(iters_q6_int_z, Z_fw_090[:, 0], linestyle='--', label='z1, beta = 0.90')
+plt.plot(iters_q6_int_z, Z_fw_090[:, 1], linestyle='--', label='z2, beta = 0.90')
+plt.xlabel('Iteration')
+plt.ylabel('Value')
+plt.title('Q6 Task 4: Evolution of x_k and z_k, interior optimum beta = 0.90')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure()
+plt.plot(iters_q6_int, X_fw_0985[:, 0], label='x1, beta = 0.985')
+plt.plot(iters_q6_int, X_fw_0985[:, 1], label='x2, beta = 0.985')
+plt.plot(iters_q6_int_z, Z_fw_0985[:, 0], linestyle='--', label='z1, beta = 0.985')
+plt.plot(iters_q6_int_z, Z_fw_0985[:, 1], linestyle='--', label='z2, beta = 0.985')
+plt.xlabel('Iteration')
+plt.ylabel('Value')
+plt.title('Q6 Task 4: Evolution of x_k and z_k, interior optimum beta = 0.985')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+iters_q6_bound = np.arange(141)
+iters_q6_bound_z = np.arange(1, 141)
+
+plt.figure()
+plt.plot(iters_q6_bound, X_fw_bound[:, 0], label='x1, beta = 0.93')
+plt.plot(iters_q6_bound, X_fw_bound[:, 1], label='x2, beta = 0.93')
+plt.plot(iters_q6_bound_z, Z_fw_bound[:, 0], linestyle='--', label='z1, beta = 0.93')
+plt.plot(iters_q6_bound_z, Z_fw_bound[:, 1], linestyle='--', label='z2, beta = 0.93')
+plt.xlabel('Iteration')
+plt.ylabel('Value')
+plt.title('Q6 Task 4: Evolution of x_k and z_k, boundary optimum')
+plt.legend()
+plt.grid(True)
+plt.show()
