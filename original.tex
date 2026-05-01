@@ -1,30 +1,37 @@
-\subsection*{Question 4 (a)}
+\subsection*{Question 5 (Task 6)}
+Figure~\ref{fig:q5_task2_objective} shows the objective or penalised objective value versus iteration for all methods. The unconstrained gradient descent (blue) reduces the objective quickly, but it does not take the constraint into account. Projected gradient descent (orange) also reduces the objective, but the trajectory is restricted to the feasible region after projection. For the penalty methods, the curves correspond to the penalised objective. Larger values of \(\lambda\), such as \(\lambda=1.8\) (red) and \(\lambda=4.5\) (purple), give a stronger penalty, so the optimisation places more emphasis on satisfying the constraint, at the cost of slower reduction in the original objective.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q5Figures/q5_task2_objective.png}
+    \caption{Objective or penalised objective value versus iteration for unconstrained GD, projected GD, and penalty GD.}
+    \label{fig:q5_task2_objective}
+\end{figure}
 
-For Benchmark B, I implemented forward finite-difference gradient descent and Nesterov random search, and compared both with exact gradient descent. In the finite-difference method, the derivative is approximated by evaluating the function after a small perturbation in each coordinate. I tested two values of the perturbation size, \(\delta=0.05\) and \(\delta=0.8\), to show how the choice of \(\delta\) affects the approximation.
+Figure~\ref{fig:q5_task3_contour} shows the optimisation trajectories on the contour plot, with the feasible boundary \(x_1 = 0.5\) marked. The unconstrained gradient descent path (blue) crosses the boundary and moves freely in the infeasible region. In contrast, projected gradient descent (orange) immediately moves onto the feasible region and then stays on or above the boundary due to the projection step. The penalty methods initially move in the infeasible region, but are gradually pushed towards the feasible region. Increasing \(\lambda\) makes this effect stronger, so the trajectory moves towards feasibility more quickly, especially for \(\lambda=1.8\) (red) and \(\lambda=4.5\) (purple).
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.65\textwidth]{q4Figures/q4b_objective_benchmarkB.png}
-    \caption{Objective value versus iteration for Benchmark B, comparing exact gradient descent, finite-difference gradient descent, and Nesterov random search.}
-    \label{fig:q4b_objective_benchmarkB}
+    \includegraphics[width=0.6\textwidth]{q5Figures/q5_task3_contour.png}
+    \caption{Contour plot with optimisation trajectories for unconstrained GD, projected GD, and penalty GD, with feasible boundary \(x_1 = 0.5\).}
+    \label{fig:q5_task3_contour}
 \end{figure}
 
-Figure~\ref{fig:q4b_objective_benchmarkB} shows that exact gradient descent decreases the objective fastest and reaches a final objective value of \(0.7244\). Finite-difference gradient descent with \(\delta=0.05\) behaves very similarly, reaching \(0.7280\). This suggests that the finite-difference approximation is accurate enough when the perturbation is small. With \(\delta=0.8\), the final objective is much worse, \(1.6402\), because the derivative approximation is too coarse.
+Figure~\ref{fig:q5_task4_violation} shows the constraint violation \(\max(0, 0.5 - x_1)\) versus iteration on a log scale. Projected gradient descent (orange) reduces the violation to zero almost immediately, since each update is followed by a projection onto the feasible set. The penalty methods reduce the violation more gradually. A larger value of \(\lambda\), especially \(\lambda=1.8\) (red) and \(\lambda=4.5\) (purple), leads to faster reduction in violation, because the penalty term has a stronger influence on the update direction. The unconstrained gradient descent (blue) has the slowest reduction in violation, since it does not explicitly enforce feasibility.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.65\textwidth]{q4Figures/q4c_contour_benchmarkB.png}
-    \caption{Contour trajectories for Benchmark B, comparing exact gradient descent, finite-difference gradient descent, and Nesterov random search.}
-    \label{fig:q4c_contour_benchmarkB}
+    \includegraphics[width=0.6\textwidth]{q5Figures/q5_task4_violation.png}
+    \caption{Constraint violation versus iteration for unconstrained GD, projected GD, and penalty GD.}
+    \label{fig:q5_task4_violation}
 \end{figure}
 
-Figure~\ref{fig:q4c_contour_benchmarkB} gives the same picture from the trajectory plot. Exact gradient descent and finite-difference gradient descent with \(\delta=0.05\) move towards almost the same region. The method with \(\delta=0.8\) moves to a poorer region and then does not improve much. Nesterov random search reaches a similar final objective value, \(0.7254\), but the path is less smooth because the search direction is random.
+Figure~\ref{fig:q5_task5_violation_zoom} shows a zoomed-in view of the first 30 iterations. This makes the differences between methods clearer. Projected gradient descent (orange) reaches zero violation in very few iterations. The penalty methods show a decreasing trend, with larger \(\lambda\) again giving faster convergence to feasibility. The unconstrained method (blue) decreases the violation slowly and remains infeasible for longer.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.65\textwidth]{q4Figures/q4a_numerical_results.png}
-    \caption{Printed numerical results for Benchmark B.}
-    \label{fig:q4a_numerical_results}
+    \includegraphics[width=0.6\textwidth]{q5Figures/q5_task5_violation_zoom.png}
+    \caption{Constraint violation versus iteration for unconstrained GD, projected GD, and penalty GD, zoomed in on the first 30 iterations.}
+    \label{fig:q5_task5_violation_zoom}
 \end{figure}
 
-Overall, the results show that finite-difference gradient descent can work well when \(\delta\) is chosen carefully, but a large \(\delta\) gives a poor approximation and harms convergence. Nesterov random search does not need exact derivatives and still finds a good solution here, although its movement is noisier than exact gradient descent.
+Overall, projected gradient descent (orange) enforces the constraint directly and is the fastest method for achieving feasibility. Penalty methods (green, red, purple) provide a softer approach, where feasibility depends on the choice of \(\lambda\). Larger values of \(\lambda\) improve constraint satisfaction but can affect optimisation behaviour. Unconstrained gradient descent (blue) is not suitable for constrained problems, since it does not account for feasibility and may remain outside the admissible set.

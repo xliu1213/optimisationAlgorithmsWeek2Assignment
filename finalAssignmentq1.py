@@ -183,7 +183,7 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# # Q1 (c)
+# Q1 (c)
 def plotContourWithTrajectories(fn, x1_range, x2_range, trajectories, labels, title):
     xx1 = np.linspace(x1_range[0], x1_range[1], 200)
     xx2 = np.linspace(x2_range[0], x2_range[1], 200)
@@ -782,5 +782,126 @@ plt.plot(np.arange(1, len(FC_grid_best_so_far) + 1), FC_grid_best_so_far)
 plt.xlabel('Function evaluation')
 plt.ylabel('Best-so-far objective value')
 plt.title('Q4 (e): Rosenbrock grid search best-so-far value')
+plt.grid(True)
+plt.show()
+
+# Q5 (I): Projected Gradient Descent on Benchmark B with constraint x1 >= 0.5
+def projectQ5(z): # Projection onto X = {x in R^2 : x1 >= 0.5}
+    z = np.array(z, dtype=float)
+    x = z.copy()
+    x[0] = max(0.5, x[0]) # x1 <- max(0.5, x1)
+    return x
+
+def projectedGradDescent(fn, x0, alpha=0.08, num_iters=100):
+    x = np.array(x0, dtype=float)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    V = np.array([max(0.0, 0.5 - x[0])]) # constraint violation
+    for _ in range(num_iters):
+        step = alpha * fn.df(x)
+        z = x - step
+        x = projectQ5(z)
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+        V = np.append(V, max(0.0, 0.5 - x[0]))
+    return (X, F, V)
+
+(XB_pgd_q5, FB_pgd_q5, VB_pgd_q5) = projectedGradDescent(fnB, x0=np.array([0.2, 4.0]), alpha=0.08, num_iters=100) # Run Projected Gradient Descent for Q5 (I)
+
+# Q5 (II): Penalty Method
+def penaltyObjectiveQ5(fn, x, lam=0.15):
+    return fn.f(x) + lam * max(0.0, -x[0] + 0.5)
+
+def penaltyGradQ5(fn, x, lam=0.15):
+    grad = fn.df(x).copy()
+    if -x[0] + 0.5 > 0:
+        grad = grad + lam * np.array([-1.0, 0.0])
+    return grad
+
+def penaltyGradDescentQ5(fn, x0, alpha=0.05, lam=0.15, num_iters=100):
+    x = np.array(x0, dtype=float)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    P = np.array([penaltyObjectiveQ5(fn, x, lam)])
+    V = np.array([max(0.0, 0.5 - x[0])])
+    for _ in range(num_iters):
+        grad = penaltyGradQ5(fn, x, lam)
+        x = x - alpha*grad
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+        P = np.append(P, penaltyObjectiveQ5(fn, x, lam))
+        V = np.append(V, max(0.0, 0.5 - x[0]))
+    return (X, F, P, V)
+
+(XB_pen_015, FB_pen_015, PB_pen_015, VB_pen_015) = penaltyGradDescentQ5(fnB, x0=np.array([0.2, 4.0]), alpha=0.05, lam=0.15, num_iters=100) # Run Penalty GD for Q5 (II)
+(XB_pen_18, FB_pen_18, PB_pen_18, VB_pen_18) = penaltyGradDescentQ5(fnB, x0=np.array([0.2, 4.0]), alpha=0.05, lam=1.8, num_iters=100)
+(XB_pen_45, FB_pen_45, PB_pen_45, VB_pen_45) = penaltyGradDescentQ5(fnB, x0=np.array([0.2, 4.0]), alpha=0.03, lam=4.5, num_iters=100)
+(XB_gd_q5, FB_gd_q5) = gradDescent(fnB, x0=np.array([0.2, 4.0]), alpha=0.07, num_iters=100)
+
+# Q5 Task 2: Plot objective or penalised objective versus iteration
+iters_q5 = np.arange(101)
+plt.figure()
+plt.plot(iters_q5, FB_gd_q5, label='Unconstrained GD objective')
+plt.plot(iters_q5, FB_pgd_q5, label='Projected GD objective')
+plt.plot(iters_q5, PB_pen_015, label='Penalty GD lambda = 0.15')
+plt.plot(iters_q5, PB_pen_18, label='Penalty GD lambda = 1.8')
+plt.plot(iters_q5, PB_pen_45, label='Penalty GD lambda = 4.5')
+plt.xlabel('Iteration')
+plt.ylabel('Objective / penalised objective value')
+plt.title('Q5 Task 2: Objective or penalised objective vs iteration')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q5 Task 3: Contour plot with trajectories
+xx1 = np.linspace(0, 0.8, 200)
+xx2 = np.linspace(1.5, 4.2, 200)
+X1, X2 = np.meshgrid(xx1, xx2)
+Z = np.zeros_like(X1)
+for i in range(X1.shape[0]):
+    for j in range(X1.shape[1]):
+        Z[i, j] = fnB.f(np.array([X1[i, j], X2[i, j]]))
+plt.figure()
+plt.contour(X1, X2, Z, levels=30)
+plt.axvline(0.5, linestyle='--', label='Feasible boundary x1 = 0.5')
+plt.plot(XB_gd_q5[:, 0], XB_gd_q5[:, 1], marker='o', markersize=2, linewidth=1.5, label='Unconstrained GD')
+plt.plot(XB_pgd_q5[:, 0], XB_pgd_q5[:, 1], marker='o', markersize=2, linewidth=1.5, label='Projected GD')
+plt.plot(XB_pen_015[:, 0], XB_pen_015[:, 1], marker='o', markersize=2, linewidth=1.5, label='Penalty GD lambda = 0.15')
+plt.plot(XB_pen_18[:, 0], XB_pen_18[:, 1], marker='o', markersize=2, linewidth=1.5, label='Penalty GD lambda = 1.8')
+plt.plot(XB_pen_45[:, 0], XB_pen_45[:, 1], marker='o', markersize=2, linewidth=1.5, label='Penalty GD lambda = 4.5')
+plt.xlabel('x1')
+plt.ylabel('x2')
+plt.title('Q5 Task 3: Contour trajectories with feasible boundary')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q5 Task 4: Plot constraint violation versus iteration
+VB_gd_q5 = np.array([max(0.0, 0.5 - x[0]) for x in XB_gd_q5])
+plt.figure()
+plt.semilogy(iters_q5, VB_gd_q5 + 1.0e-12, label='Unconstrained GD')
+plt.semilogy(iters_q5, VB_pgd_q5 + 1.0e-12, label='Projected GD')
+plt.semilogy(iters_q5, VB_pen_015 + 1.0e-12, label='Penalty GD lambda = 0.15')
+plt.semilogy(iters_q5, VB_pen_18 + 1.0e-12, label='Penalty GD lambda = 1.8')
+plt.semilogy(iters_q5, VB_pen_45 + 1.0e-12, label='Penalty GD lambda = 4.5')
+plt.xlabel('Iteration')
+plt.ylabel('Constraint violation max(0, 0.5 - x1)')
+plt.title('Q5 Task 4: Constraint violation vs iteration')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q5 Task 5: Zoomed-in constraint violation (first 30 iterations)
+iters_30 = np.arange(31)
+plt.figure()
+plt.semilogy(iters_30, VB_gd_q5[:31] + 1.0e-12, label='Unconstrained GD')
+plt.semilogy(iters_30, VB_pgd_q5[:31] + 1.0e-12, label='Projected GD')
+plt.semilogy(iters_30, VB_pen_015[:31] + 1.0e-12, label='Penalty GD lambda = 0.15')
+plt.semilogy(iters_30, VB_pen_18[:31] + 1.0e-12, label='Penalty GD lambda = 1.8')
+plt.semilogy(iters_30, VB_pen_45[:31] + 1.0e-12, label='Penalty GD lambda = 4.5')
+plt.xlabel('Iteration')
+plt.ylabel('Constraint violation max(0, 0.5 - x1)')
+plt.title('Q5 Task 5: Constraint violation (first 30 iterations)')
+plt.legend()
 plt.grid(True)
 plt.show()
