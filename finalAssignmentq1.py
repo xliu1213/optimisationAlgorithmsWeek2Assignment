@@ -611,3 +611,176 @@ plt.title('Q3 (e): Benchmark C update magnitude')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+# Q4 Part A (I): Forward finite-difference gradient approximation
+def finiteDiffGrad(fn, x, delta=0.05):
+    x = np.array(x, dtype=float)
+    grad = np.zeros_like(x)
+    fx = fn.f(x)
+    for i in range(len(x)):
+        e = np.zeros_like(x)
+        e[i] = 1.0
+        grad[i] = (fn.f(x + delta*e) - fx) / delta
+    return grad
+
+def finiteDiffGradDescent(fn, x0, alpha=0.08, delta=0.05, num_iters=120):
+    x = np.array(x0, dtype=float)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    for _ in range(num_iters):
+        grad = finiteDiffGrad(fn, x, delta)
+        x = x - alpha*grad
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+    return (X, F)
+
+(XB_fd_good, FB_fd_good) = finiteDiffGradDescent(fnB, np.array([1.0, 1.0]), alpha=0.08, delta=0.05, num_iters=120) # Run finite-difference GD on Benchmark B
+(XB_fd_poor, FB_fd_poor) = finiteDiffGradDescent(fnB, np.array([1.0, 1.0]), alpha=0.08, delta=0.8, num_iters=120)
+
+# Q4 Part A (II): Nesterov Random Search
+def nesterovRandomSearch(fn, x0, alpha=0.025, delta=0.08, num_iters=220, seed=0):
+    np.random.seed(seed)
+    x = np.array(x0, dtype=float)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    ndim = len(x)
+    for _ in range(num_iters):
+        z = np.random.randn(ndim)
+        u = z / np.sqrt(np.sum(z*z)) # random unit vector
+        step = alpha * ((fn.f(x + delta*u) - fn.f(x)) / delta) * u
+        x = x - step
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+    return (X, F)
+
+(XB_nrs, FB_nrs) = nesterovRandomSearch(fnB, np.array([1.0, 1.0]), alpha=0.025, delta=0.08, num_iters=220, seed=0)
+(XB_gd_q4a, FB_gd_q4a) = gradDescent(fnB, np.array([1.0, 1.0]), alpha=0.06, num_iters=220)
+
+# Q4 Part B (I): Simplex Method / Nelder-Mead on Benchmark C
+def nelderMead(fn, x0, simplex_step=0.35, num_iters=160):
+    x0 = np.array(x0, dtype=float)
+    ndim = len(x0)
+    simplex = np.array([x0.copy()])
+    for i in range(ndim):
+        x = x0.copy()
+        x[i] = x[i] + simplex_step
+        simplex = np.append(simplex, [x], axis=0)
+    X = np.array([x0.copy()])
+    F = np.array([fn.f(x0)])
+    alpha = 1.0   # reflection
+    gamma = 2.0   # expansion
+    rho = 0.5     # contraction
+    sigma = 0.5   # shrink
+    for _ in range(num_iters):
+        fvals = np.array([fn.f(x) for x in simplex])
+        order = np.argsort(fvals)
+        simplex = simplex[order]
+        fvals = fvals[order]
+        best = simplex[0]
+        worst = simplex[-1]
+        second_worst_f = fvals[-2]
+        centroid = np.mean(simplex[:-1], axis=0)
+        xr = centroid + alpha*(centroid - worst)
+        fr = fn.f(xr)
+        if fr < fvals[0]:
+            xe = centroid + gamma*(xr - centroid)
+            if fn.f(xe) < fr:
+                simplex[-1] = xe
+            else:
+                simplex[-1] = xr
+        elif fr < second_worst_f:
+            simplex[-1] = xr
+        else:
+            xc = centroid + rho*(worst - centroid)
+            if fn.f(xc) < fvals[-1]:
+                simplex[-1] = xc
+            else:
+                for i in range(1, len(simplex)):
+                    simplex[i] = best + sigma*(simplex[i] - best)
+        fvals = np.array([fn.f(x) for x in simplex])
+        best_index = np.argmin(fvals)
+        best_x = simplex[best_index]
+        X = np.append(X, [best_x.copy()], axis=0)
+        F = np.append(F, fn.f(best_x))
+    return (X, F)
+
+(XC_nm, FC_nm) = nelderMead(fnC, np.array([-1.25, 0.5]), simplex_step=0.35, num_iters=160)
+
+# Q4 Part B (II): Grid Search on Benchmark C using a 55 x 55 grid
+def gridSearch(fn, x1_range=(-2, 2), x2_range=(-1, 3), grid_size=55):
+    best_x = None
+    best_f = float('inf')
+    Xgrid = np.empty((0, 2))
+    Fgrid = np.array([])
+    BestF = np.array([])
+    x1_values = np.linspace(x1_range[0], x1_range[1], grid_size)
+    x2_values = np.linspace(x2_range[0], x2_range[1], grid_size)
+    for x1 in x1_values:
+        for x2 in x2_values:
+            x = np.array([x1, x2], dtype=float)
+            fx = fn.f(x)
+            Xgrid = np.append(Xgrid, [x.copy()], axis=0)
+            Fgrid = np.append(Fgrid, fx)
+            if fx < best_f:
+                best_f = fx
+                best_x = x.copy()
+            BestF = np.append(BestF, best_f)
+    return (Xgrid, Fgrid, BestF, best_x, best_f)
+
+(XC_grid_points, FC_grid_values, FC_grid_best_so_far, XC_grid, FC_grid) = gridSearch(fnC, x1_range=(-2, 2), x2_range=(-1, 3), grid_size=55)
+
+# Q4 (a): Numerical summary for Benchmark B
+print("Q4 (a): Benchmark B numerical results")
+print("Exact GD final x:", XB_gd_q4a[-1])
+print("Exact GD final objective:", FB_gd_q4a[-1])
+print("FD GD delta = 0.05 final x:", XB_fd_good[-1])
+print("FD GD delta = 0.05 final objective:", FB_fd_good[-1])
+print("FD GD delta = 0.8 final x:", XB_fd_poor[-1])
+print("FD GD delta = 0.8 final objective:", FB_fd_poor[-1])
+print("Nesterov random search final x:", XB_nrs[-1])
+print("Nesterov random search final objective:", FB_nrs[-1])
+
+# Q4 (b): Objective value versus iteration on Benchmark B
+plt.figure()
+plt.plot(np.arange(len(FB_gd_q4a)), FB_gd_q4a, label='Exact GD baseline')
+plt.plot(np.arange(len(FB_fd_good)), FB_fd_good, label='FD GD delta = 0.05')
+plt.plot(np.arange(len(FB_fd_poor)), FB_fd_poor, label='FD GD delta = 0.8')
+plt.plot(np.arange(len(FB_nrs)), FB_nrs, label='Nesterov random search')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Q4 (b): Benchmark B objective value vs iteration')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q4 (c): Contour trajectories on Benchmark B
+plotContourWithTrajectories(
+    fnB,
+    x1_range=(-0.5, 2.0),
+    x2_range=(0.5, 3),
+    trajectories=[XB_gd_q4a, XB_fd_good, XB_fd_poor, XB_nrs],
+    labels=['Exact GD baseline', 'FD GD delta = 0.05', 'FD GD delta = 0.8', 'Nesterov random search'],
+    title='Q4 (c): Benchmark B contour trajectories'
+)
+
+# Q4 (d): Nelder-Mead trajectory on Benchmark C / Rosenbrock
+plotContourWithTrajectories(fnC, x1_range=(-1.5, 1.5), x2_range=(-0.5, 2.0), trajectories=[XC_nm], labels=['Nelder-Mead'], title='Q4 (d): Rosenbrock Nelder-Mead trajectory')
+
+# Q4 (e): Grid-search sampling pattern and best-so-far value on Benchmark C / Rosenbrock
+plt.figure()
+plt.scatter(XC_grid_points[:, 0], XC_grid_points[:, 1], s=6, label='Grid search samples')
+plt.scatter(XC_grid[0], XC_grid[1], marker='x', s=80, label='Best point')
+plt.xlabel('x1')
+plt.ylabel('x2')
+plt.title('Q4 (e): Rosenbrock grid-search sampling pattern')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure()
+plt.plot(np.arange(1, len(FC_grid_best_so_far) + 1), FC_grid_best_so_far)
+plt.xlabel('Function evaluation')
+plt.ylabel('Best-so-far objective value')
+plt.title('Q4 (e): Rosenbrock grid search best-so-far value')
+plt.grid(True)
+plt.show()

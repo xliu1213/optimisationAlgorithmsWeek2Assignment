@@ -1,264 +1,30 @@
-\subsection*{Question 3 (I)}
-The one-dimensional function is \(g(x) = x^4\). The first derivative is \(g'(x) = 4x^3\). My code just plugs these two into \(g(x) \approx g(x_0) + g'(x_0)(x - x_0)\) with \(x_0 = 0.25\) as shown in Listing~\ref{lst:q3i}.
-\begin{lstlisting}[caption={[First-order local approximation for \(g(x)=x^4\)]Python code implementing the one-dimensional test function \(g(x)=x^4\), its derivative \(g'(x)=4x^3\), and the first-order local approximation \(g(x_0) + g'(x_0)(x - x_0)\).}, label={lst:q3i}]
-class QuarticFn(): # one-dimensional test function g(x) = x^4
-    def f(self, x):
-        return x**4
+\subsection*{Question 4 (a)}
 
-    def df(self, x):
-        return 4*x**3
+For Benchmark B, I implemented forward finite-difference gradient descent and Nesterov random search, and compared both with exact gradient descent. In the finite-difference method, the derivative is approximated by evaluating the function after a small perturbation in each coordinate. I tested two values of the perturbation size, \(\delta=0.05\) and \(\delta=0.8\), to show how the choice of \(\delta\) affects the approximation.
 
-def firstOrderApprox(fn, x, x0): # g(x0) + g'(x0)(x - x0)
-    return fn.f(x0) + fn.df(x0)*(x - x0)
-\end{lstlisting}
-
-Figure~\ref{fig:q3i_first_order} shows the function \(g(x)=x^4\) (blue) and its first-order local approximation at \(x_0=0.25\) (orange). The blue point marks the expansion point. The approximation matches the function at this point and follows the local slope there. However, it is only a local approximation, so it is closest to the original function near \(x_0\) and becomes less accurate further away from that point.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3i_first_order.png}
-    \caption{First-order approximation of \(g(x)=x^4\) around \(x_0=0.25\).}
-    \label{fig:q3i_first_order}
+    \includegraphics[width=0.65\textwidth]{q4Figures/q4b_objective_benchmarkB.png}
+    \caption{Objective value versus iteration for Benchmark B, comparing exact gradient descent, finite-difference gradient descent, and Nesterov random search.}
+    \label{fig:q4b_objective_benchmarkB}
 \end{figure}
 
-\subsection*{Question 3 (II)}
-\paragraph{Deriving the Newton update for the one-dimensional case.}
-Using the same function \(g(x)=x^4\), the second derivative is \(g''(x)=12x^2\). The second-order local approximation is \(g(x) \approx g(x_0) + g'(x_0)(x-x_0) + \frac{1}{2}g''(x_0)(x-x_0)^2\). To get the Newton update, minimise this local quadratic approximation. Let
-\[
-q(x) = g(x_0) + g'(x_0)(x-x_0) + \frac{1}{2}g''(x_0)(x-x_0)^2.
-\]
-Differentiating \(q(x)\) with respect to \(x\) gives
-\[
-\frac{dq}{dx}
-= 0 + g'(x_0) + \frac{1}{2}g''(x_0)\cdot 2(x-x_0).
-\]
-Therefore,
-\[
-\frac{dq}{dx} = g'(x_0) + g''(x_0)(x-x_0).
-\]
-At the minimum, this derivative is set equal to zero:
-\[
-g'(x_0) + g''(x_0)(x-x_0) = 0.
-\]
-Rearranging,
-\[
-g''(x_0)(x-x_0) = -g'(x_0),
-\]
-so
-\[
-x-x_0 = -\frac{g'(x_0)}{g''(x_0)}.
-\]
-Therefore,
-\[
-x = x_0 - \frac{g'(x_0)}{g''(x_0)}.
-\]
+Figure~\ref{fig:q4b_objective_benchmarkB} shows that exact gradient descent decreases the objective fastest and reaches a final objective value of \(0.7244\). Finite-difference gradient descent with \(\delta=0.05\) behaves very similarly, reaching \(0.7280\). This suggests that the finite-difference approximation is accurate enough when the perturbation is small. With \(\delta=0.8\), the final objective is much worse, \(1.6402\), because the derivative approximation is too coarse.
 
-This is the one-dimensional version of the Newton update used in the lecture notes:
-\[
-x_{t+1} = x_t - \alpha(\nabla^2 f(x_t))^{-1}\nabla f(x_t).
-\]
-For one variable, this becomes
-\[
-x_{t+1} = x_t - \alpha \frac{g'(x_t)}{g''(x_t)}.
-\]
-
-\paragraph{Hessian calculations.}
-The Hessian as the matrix of second partial derivatives. Since Newton's method uses the Hessian in the update step, I calculated one Hessian for each benchmark function. For Benchmark A, the loss is \(J(\theta)=\frac{1}{2m}\sum_{i=1}^{m}(\theta^T x^{(i)}-y^{(i)})^2\). In matrix form this is \(J(\theta)=\frac{1}{2m}\|X\theta-y\|^2\). The gradient is
-\[
-\nabla J(\theta)=\frac{1}{m}X^T(X\theta-y).
-\]
-Differentiating once more with respect to \(\theta\) gives
-\[
-\nabla^2 J(\theta)=\frac{1}{m}X^TX.
-\]
-This Hessian does not depend on \(\theta\), because Benchmark A is a quadratic loss. This is why the code only uses the data matrix \(X\) and the number of samples \(m\):
-\[
-\texttt{(fn.X.T @ fn.X) / fn.m}.
-\]
-
-For Benchmark B, the objective is \(f(x_1,x_2)=(x_1-1)^2+5(x_2-2)^2+\sin(x_1)\). Its first derivatives are
-\[
-\frac{\partial f}{\partial x_1}=2(x_1-1)+\cos(x_1), \qquad
-\frac{\partial f}{\partial x_2}=10(x_2-2).
-\]
-Taking second partial derivatives gives
-\[
-\frac{\partial^2 f}{\partial x_1^2}=2-\sin(x_1), \qquad
-\frac{\partial^2 f}{\partial x_2^2}=10.
-\]
-There is no mixed \(x_1x_2\) term in the function, so the mixed partial derivatives are zero:
-\[
-\frac{\partial^2 f}{\partial x_1 \partial x_2}
-=
-\frac{\partial^2 f}{\partial x_2 \partial x_1}
-=0.
-\]
-Therefore, the Hessian is
-\[
-\nabla^2 f(x)=
-\begin{bmatrix}
-2-\sin(x_1) & 0 \\
-0 & 10
-\end{bmatrix}
-\]
-and is implemented in code as shown in Listing~\ref{lst:q3b_hessianB}.
-\begin{lstlisting}[caption={[Hessian for Benchmark B]Python code implementing the Hessian matrix \(\nabla^2 f(x)\) for the Toy Neural Network objective \(f(x_1,x_2)=(x_1-1)^2+5(x_2-2)^2+\sin(x_1)\).}, label={lst:q3b_hessianB}]
-def hessianToyNeuralNet(x): # Benchmark B Hessian
-    x1 = x[0]
-    return np.array([
-        [2 - np.sin(x1), 0],
-        [0, 10]
-    ])
-\end{lstlisting}
-
-For Benchmark C, the Rosenbrock function is \(f(x_1,x_2)=(1-x_1)^2+100(x_2-x_1^2)^2\). The gradient is
-\[
-\frac{\partial f}{\partial x_1}
-=
--2(1-x_1)-400x_1(x_2-x_1^2),
-\qquad
-\frac{\partial f}{\partial x_2}
-=
-200(x_2-x_1^2).
-\]
-Differentiating these gradient components again gives
-\[
-\frac{\partial^2 f}{\partial x_1^2}
-=
-2-400x_2+1200x_1^2,
-\]
-\[
-\frac{\partial^2 f}{\partial x_1 \partial x_2}
-=
-\frac{\partial^2 f}{\partial x_2 \partial x_1}
-=
--400x_1,
-\]
-and
-\[
-\frac{\partial^2 f}{\partial x_2^2}
-=
-200.
-\]
-So the Hessian used in the code is
-\[
-\nabla^2 f(x)=
-\begin{bmatrix}
-2-400x_2+1200x_1^2 & -400x_1 \\
--400x_1 & 200
-\end{bmatrix}
-\]
-and is implemented in code as shown in Listing~\ref{lst:q3b_hessianC}.
-\begin{lstlisting}[caption={[Hessian for Benchmark C]Python code implementing the Hessian matrix \(\nabla^2 f(x)\) for the Rosenbrock function \(f(x_1,x_2)=(1-x_1)^2+100(x_2-x_1^2)^2\).}, label={lst:q3b_hessianC}]
-def hessianRosenbrock(x): # Benchmark C Hessian
-    x1, x2 = x[0], x[1]
-    h11 = 2 - 400*x2 + 1200*x1**2
-    h12 = -400*x1
-    h22 = 200
-    return np.array([
-        [h11, h12],
-        [h12, h22]
-    ])
-\end{lstlisting}
-
-\paragraph{Newton method implementation.}
-The implementation follows the Newton update from the lecture notes,
-\[
-x_{t+1} = x_t - \alpha(\nabla^2 f(x_t))^{-1}\nabla f(x_t).
-\]
-In the code, as seen in Listing~\ref{lst:q3_newton_method}, \(\nabla f(x_t)\) is computed by \texttt{fn.df(x)} and \(\nabla^2 f(x_t)\) is computed by the relevant Hessian function. Instead of explicitly calculating the inverse Hessian, the code solves the linear system
-\[
-(H_t+\lambda I)p_t = \nabla f(x_t),
-\]
-where \(H_t=\nabla^2 f(x_t)\) and \(\lambda=10^{-8}\) is the Hessian damping value specified in the assignment. This gives the Newton direction \(p_t\), and the update is then
-\[
-x_{t+1}=x_t-\alpha p_t.
-\]
-\begin{lstlisting}[caption={[Newton method implementation]Python code implementing Newton's method using \(x_{t+1}=x_t-\alpha(\nabla^2 f(x_t))^{-1}\nabla f(x_t)\).}, label={lst:q3_newton_method}]
-def newtonMethod(fn, hessian_fn, x0, alpha=1.0, damping=1.0e-8, num_iters=20):
-    x = np.array(x0, dtype=float)
-    X = np.array([x.copy()])
-    F = np.array([fn.f(x)])
-    U = np.array([])
-    for _ in range(num_iters):
-        grad = fn.df(x)
-        H = hessian_fn(fn, x)
-        H_damped = H + damping*np.eye(len(x))
-        step = np.linalg.solve(H_damped, grad)
-        x = x - alpha*step
-        X = np.append(X, [x.copy()], axis=0)
-        F = np.append(F, fn.f(x))
-        U = np.append(U, np.linalg.norm(alpha*step))
-    return (X, F, U)
-\end{lstlisting}
-
-\subsection*{Question 3 (a)}
-The blue point in Figure~\ref{fig:q3a_first_second} marks the expansion point similar to in Q3 (I). Both approximations match the function at this point. The first-order approximation (orange) is a straight line, so it only captures the local slope of the function. As a result, it quickly moves away from the true curve as \(x\) moves away from \(x_0\). The second-order approximation includes curvature, so it follows the shape of the function more closely near \(x_0\). It stays closer to the original function over a wider range compared to the first-order approximation. Overall, this plot shows that adding the second-order term improves the local approximation by capturing both slope and curvature.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3a_first_second_order.png}
-    \caption{Original function \(g(x)=x^4\) with first-order and second-order local approximations at \(x_0=0.25\).}
-    \label{fig:q3a_first_second}
+    \includegraphics[width=0.65\textwidth]{q4Figures/q4c_contour_benchmarkB.png}
+    \caption{Contour trajectories for Benchmark B, comparing exact gradient descent, finite-difference gradient descent, and Nesterov random search.}
+    \label{fig:q4c_contour_benchmarkB}
 \end{figure}
 
-\subsection*{Question 3 (c)}
-We can use objective value versus iteration plots to compare Newton’s method with gradient descent. Figure~\ref{fig:q3c_A} shows the result for Benchmark A, the Linear Regression problem. Newton (orange) reduces the objective value to near zero in almost one step, while gradient descent (blue) decreases the objective more gradually over many iterations. This shows that Newton’s method is significantly faster on this quadratic problem, since Newton can reach the minimum in one step for quadratic functions when the Hessian is exact.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3c_benchmarkA.png}
-    \caption{Objective value versus iteration for Linear Regression, comparing Newton (orange) and gradient descent (blue).}
-    \label{fig:q3c_A}
-\end{figure}
-Figure~\ref{fig:q3c_B} shows the result for Benchmark B, the Toy Neural Network problem. Both Newton (orange) and gradient descent (blue) reduce the objective value rapidly in the first few iterations. Newton decreases more steeply at the start and stays below gradient descent for roughly the first 10 iterations, meaning it reaches lower objective values earlier. However, after this initial phase the two curves move close together and settle at a similar final value. This suggests that Newton gives a faster early decrease on this benchmark, but the practical difference becomes small once both methods have reached the minimum region and Newton doesn't converge too much faster than gradient descent. This is a useful reminder that second-order information does not automatically produce a large visible improvement in every case; the benefit depends on the function shape, starting point, and parameter settings.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3c_benchmarkB.png}
-    \caption{Objective value versus iteration for the Toy Neural Network.}
-    \label{fig:q3c_B}
-\end{figure}
-Figure~\ref{fig:q3c_C} shows the result for Benchmark C, the Rosenbrock function. Both Newton (orange) and gradient descent (blue) appear flat at zero. This is because the initial point is already at the minimiser \((1,1)\), so there is no visible change in the objective value. The figure is still useful because it provides a reference case against Benchmarks A and B: unlike those two plots, where the methods have to reduce a non-zero objective, this plot shows what happens when both methods start at the solution. It also confirms that neither method moves away from the minimiser under the chosen parameter settings. Therefore, it is less useful for comparing convergence speed, but still useful for checking stability at the optimum.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3c_benchmarkC.png}
-    \caption{Objective value versus iteration for the Rosenbrock function.}
-    \label{fig:q3c_C}
-\end{figure}
-Overall, Newton’s method consistently converges faster than gradient descent when the Hessian information is available and well-behaved. However, the Rosenbrock case highlights that the comparison depends on the choice of initial point.
+Figure~\ref{fig:q4c_contour_benchmarkB} gives the same picture from the trajectory plot. Exact gradient descent and finite-difference gradient descent with \(\delta=0.05\) move towards almost the same region. The method with \(\delta=0.8\) moves to a poorer region and then does not improve much. Nesterov random search reaches a similar final objective value, \(0.7254\), but the path is less smooth because the search direction is random.
 
-\subsection*{Question 3 (d)}
-Contour plots with optimisation trajectories allow a geometric comparison of how Newton’s method and gradient descent move through the parameter space. Figure~\ref{fig:q3d_B} shows the result for Benchmark B, the Toy Neural Network problem. Gradient descent (blue) follows a path that moves gradually toward the minimum, first adjusting one coordinate and then the other, resulting in a slightly curved trajectory. In contrast, Newton (orange) takes a more direct path toward the minimiser. Its steps are larger and point more directly toward the centre of the contours, reflecting the use of second-order information. This explains why Newton reaches the minimum region in fewer iterations, while gradient descent takes a more incremental route.
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3d_benchmarkB.png}
-    \caption{Contour plot for the Toy Neural Network, showing optimisation trajectories of gradient descent (blue) and Newton (orange).}
-    \label{fig:q3d_B}
-\end{figure}
-Figure~\ref{fig:q3d_C} shows the result for Benchmark C, the Rosenbrock function. Both Newton (orange) and gradient descent (blue) appear as a single point at \((1,1)\). This is because the initial point is already at the minimiser, so neither method makes any updates. As a result, no trajectory is visible. Although this plot does not illustrate movement, it still confirms that both methods correctly remain at the minimum and do not introduce unnecessary updates. Overall, the contour plots highlight the difference in update directions: Newton tends to move directly toward the minimiser using curvature information, while gradient descent follows a more gradual path guided only by the gradient.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3d_benchmarkC.png}
-    \caption{Contour plot for the Rosenbrock function, showing optimisation trajectories of gradient descent (blue) and Newton (orange).}
-    \label{fig:q3d_C}
+    \includegraphics[width=0.65\textwidth]{q4Figures/q4a_numerical_results.png}
+    \caption{Printed numerical results for Benchmark B.}
+    \label{fig:q4a_numerical_results}
 \end{figure}
 
-\subsection*{Question 3 (e)}
-The update magnitude plots show how large each step is at every iteration, which helps explain the convergence behaviour observed earlier. Figure~\ref{fig:q3e_A} shows the result for Benchmark A, the Linear Regression problem. Newton (orange) makes a very large initial update, visible as a sharp spike at the first iteration, and then the update magnitude immediately drops to zero. This indicates that Newton reaches the minimiser in essentially one step for this quadratic problem. In contrast, gradient descent (blue) starts with a smaller update and then gradually decreases its step size over many iterations, reflecting its slower convergence.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3e_benchmarkA.png}
-    \caption{Update magnitude versus iteration for the Linear Regression problem, comparing gradient descent (blue) and Newton (orange).}
-    \label{fig:q3e_A}
-\end{figure}
-Figure~\ref{fig:q3e_B} shows the result for Benchmark B, the Toy Neural Network problem. Both Newton (orange) and gradient descent (blue) begin with relatively large updates, but Newton’s initial step is larger and decreases more quickly. After the first few iterations, Newton’s update magnitude becomes very small, while gradient descent continues to take small but non-zero steps for longer. This matches the earlier observation that Newton reaches the minimum region faster, although the difference becomes small once both methods are close to the optimum.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3e_benchmarkB.png}
-    \caption{Update magnitude versus iteration for the Toy Neural Network problem, comparing gradient descent (blue) and Newton (orange).}
-    \label{fig:q3e_B}
-\end{figure}
-Figure~\ref{fig:q3e_C} shows the result for Benchmark C, the Rosenbrock function. Both Newton (orange) and gradient descent (blue) have zero update magnitude throughout. This is because the initial point is already at the minimiser \((1,1)\), so no updates are made. This again confirms that both methods remain stable at the optimum. Overall, the update magnitude plots highlight a key difference between the methods: Newton typically makes larger, more aggressive steps early on and then stops once the minimum is reached, while gradient descent takes smaller, gradually decreasing steps over many iterations.
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.6\textwidth]{q3Figures/q3e_benchmarkC.png}
-    \caption{Update magnitude versus iteration for the Rosenbrock function, comparing gradient descent (blue) and Newton (orange).}
-    \label{fig:q3e_C}
-\end{figure}
+Overall, the results show that finite-difference gradient descent can work well when \(\delta\) is chosen carefully, but a large \(\delta\) gives a poor approximation and harms convergence. Nesterov random search does not need exact derivatives and still finds a good solution here, although its movement is noisier than exact gradient descent.

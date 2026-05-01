@@ -1,0 +1,30 @@
+\subsection*{Question 4 (a)}
+
+For the Toy Neural Network problem, I implemented forward finite-difference gradient descent and Nesterov random search, and compared both with exact gradient descent. In the finite-difference method, the derivative is approximated by evaluating the function after a small perturbation in each coordinate. I tested two values of the perturbation size, \(\delta=0.05\) and \(\delta=0.8\), to show how the choice of \(\delta\) affects the approximation.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q4Figures/q4b_objective_benchmarkB.png}
+    \caption{Objective value versus iteration for the Toy Neural Network problem, comparing exact gradient descent, finite-difference gradient descent, and Nesterov random search.}
+    \label{fig:q4b_objective_benchmarkB}
+\end{figure}
+
+Figure~\ref{fig:q4b_objective_benchmarkB} shows that exact gradient descent (blue) decreases the objective fastest and reaches a final objective value of \(0.7244\). Finite-difference gradient descent with \(\delta=0.05\) (orange) behaves very similarly, reaching \(0.7280\). This suggests that the finite-difference approximation is accurate enough when the perturbation is small. With \(\delta=0.8\) (green), the final objective is much worse, \(1.6402\), because the derivative approximation is too coarse. Nesterov random search (red) also reaches a similar final value, \(0.7254\), but takes more iterations to get there.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q4Figures/q4c_contour_benchmarkB.png}
+    \caption{Contour trajectories for the Toy Neural Network problem, comparing exact gradient descent, finite-difference gradient descent, and Nesterov random search.}
+    \label{fig:q4c_contour_benchmarkB}
+\end{figure}
+
+Figure~\ref{fig:q4c_contour_benchmarkB} gives the same picture from the trajectory plot. Exact gradient descent (blue) and finite-difference gradient descent with \(\delta=0.05\) (orange) move towards almost the same region. Finite-difference gradient descent with \(\delta=0.8\) (green) moves to a poorer region and then does not improve much. Nesterov random search (red) reaches the same general minimum region, but its path is less smooth because the search direction is random.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{q4Figures/q4a_numerical_results.png}
+    \caption{Printed numerical results for the Toy Neural Network problem.}
+    \label{fig:q4a_numerical_results}
+\end{figure}
+
+Overall, the results show that finite-difference gradient descent can work well when \(\delta\) is chosen carefully, but a large \(\delta\) gives a poor approximation and harms convergence. Nesterov random search does not need exact derivatives and still finds a good solution here, although its movement is noisier than exact gradient descent.
