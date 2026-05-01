@@ -183,7 +183,7 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# Q1 (c)
+# # Q1 (c)
 def plotContourWithTrajectories(fn, x1_range, x2_range, trajectories, labels, title):
     xx1 = np.linspace(x1_range[0], x1_range[1], 200)
     xx2 = np.linspace(x2_range[0], x2_range[1], 200)
@@ -425,6 +425,189 @@ plt.semilogy(FA_noisy_sgd_b40, label='Higher noise, batch size 40')
 plt.xlabel('Update')
 plt.ylabel('Loss')
 plt.title('Benchmark A: Mini-Batch SGD under original and higher noise')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q3 (I) and Q3 (II): First-order and second-order local approximation
+class QuarticFn(): # one-dimensional test function g(x) = x^4
+    def f(self, x):
+        return x**4
+
+    def df(self, x):
+        return 4*x**3
+
+    def ddf(self, x):
+        return 12*x**2
+
+def firstOrderApprox(fn, x, x0): # g(x0) + g'(x0)(x - x0)
+    return fn.f(x0) + fn.df(x0)*(x - x0)
+
+def secondOrderApprox(fn, x, x0): # g(x0) + g'(x0)(x - x0) + 0.5*g''(x0)*(x - x0)^2
+    return fn.f(x0) + fn.df(x0)*(x - x0) + 0.5*fn.ddf(x0)*(x - x0)**2
+
+fnQ3 = QuarticFn()
+x0_q3 = 0.25
+xx = np.arange(-1, 1.01, 0.01)
+g = fnQ3.f(xx)
+g_linear = firstOrderApprox(fnQ3, xx, x0_q3)
+g_quadratic = secondOrderApprox(fnQ3, xx, x0_q3)
+
+plt.figure()
+plt.plot(xx, g, label='Original function g(x) = x^4')
+plt.plot(xx, g_linear, label='First-order approximation at x0 = 0.25')
+plt.scatter([x0_q3], [fnQ3.f(x0_q3)], marker='o', label='Expansion point x0')
+plt.xlabel('x')
+plt.ylabel('g(x)')
+plt.title('Q3 (I): First-order local approximation of g(x) = x^4')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q3 (II): Newton's Method with Hessian damping
+def hessianLinearRegression(fn, x): # x unused, but keeps interface consistent
+    return (fn.X.T @ fn.X) / fn.m
+
+def hessianToyNeuralNet(fn, x):
+    x1 = x[0]
+    return np.array([
+        [2 - np.sin(x1), 0],
+        [0, 10]
+    ])
+
+def hessianRosenbrock(fn, x):
+    x1, x2 = x[0], x[1]
+    h11 = 2 - 400*x2 + 1200*x1**2
+    h12 = -400*x1
+    h22 = 200
+    return np.array([
+        [h11, h12],
+        [h12, h22]
+    ])
+
+def newtonMethod(fn, hessian_fn, x0, alpha=1.0, damping=1.0e-8, num_iters=20):
+    x = np.array(x0, dtype=float)
+    X = np.array([x.copy()])
+    F = np.array([fn.f(x)])
+    U = np.array([])
+    for _ in range(num_iters):
+        grad = fn.df(x)
+        H = hessian_fn(fn, x)
+        H_damped = H + damping*np.eye(len(x))
+        step = np.linalg.solve(H_damped, grad)
+        x = x - alpha*step
+        X = np.append(X, [x.copy()], axis=0)
+        F = np.append(F, fn.f(x))
+        U = np.append(U, np.linalg.norm(alpha*step))
+    return (X, F, U)
+
+(XA_newton, FA_newton, UA_newton) = newtonMethod(fnA, hessianLinearRegression, np.array([1.0, 1.0]), alpha=1.0, damping=1.0e-8, num_iters=20)
+(XB_newton, FB_newton, UB_newton) = newtonMethod(fnB, hessianToyNeuralNet, np.array([1.0, 1.0]), alpha=0.85, damping=1.0e-8, num_iters=20)
+(XC_newton, FC_newton, UC_newton) = newtonMethod(fnC, hessianRosenbrock, np.array([1.0, 1.0]), alpha=0.22, damping=1.0e-8, num_iters=20)
+(XA_gd_q3, FA_gd_q3) = gradDescent(fnA, np.array([1.0, 1.0]), alpha=0.08, num_iters=80)
+(XB_gd_q3, FB_gd_q3) = gradDescent(fnB, np.array([1.0, 1.0]), alpha=0.06, num_iters=80)
+(XC_gd_q3, FC_gd_q3) = gradDescent(fnC, np.array([1.0, 1.0]), alpha=0.001, num_iters=80)
+
+# Q3 (a): First-order and second-order approximations
+plt.figure()
+plt.plot(xx, g, label='Original function g(x) = x^4')
+plt.plot(xx, g_linear, label='First-order approximation at x0 = 0.25')
+plt.plot(xx, g_quadratic, label='Second-order approximation at x0 = 0.25')
+plt.scatter([x0_q3], [fnQ3.f(x0_q3)], marker='o', label='Expansion point x0')
+plt.xlabel('x')
+plt.ylabel('g(x)')
+plt.title('Q3 (a): Original function with first-order and second-order approximations')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q3 (c): Compare Newton's Method with Gradient Descent
+plt.figure()
+plt.plot(np.arange(81), FA_gd_q3, label='GD baseline')
+plt.plot(np.arange(21), FA_newton, label='Newton')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Q3 (c): Benchmark A Newton vs GD')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure()
+plt.plot(np.arange(81), FB_gd_q3, label='GD baseline')
+plt.plot(np.arange(21), FB_newton, label='Newton')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Q3 (c): Benchmark B Newton vs GD')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure()
+plt.plot(np.arange(81), FC_gd_q3, label='GD baseline')
+plt.plot(np.arange(21), FC_newton, label='Newton')
+plt.xlabel('Iteration')
+plt.ylabel('Objective value')
+plt.title('Q3 (c): Benchmark C Newton vs GD')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Q3 (d): Contour trajectories for Benchmark B and Benchmark C
+plotContourWithTrajectories(
+    fnB,
+    x1_range=(-1.5, 2.5),
+    x2_range=(0.5, 3.5),
+    trajectories=[XB_gd_q3, XB_newton],
+    labels=['GD baseline', 'Newton'],
+    title='Q3 (d): Benchmark B Newton vs GD contour trajectories'
+)
+
+plotContourWithTrajectories(
+    fnC,
+    x1_range=(-1.5, 1.5),
+    x2_range=(-0.5, 2.0),
+    trajectories=[XC_gd_q3, XC_newton],
+    labels=['GD baseline', 'Newton'],
+    title='Q3 (d): Benchmark C Newton vs GD contour trajectories'
+)
+
+# Q3 (e): Update magnitude versus iteration
+def updateMagnitude(X):
+    U = np.array([])
+    for k in range(1, len(X)):
+        U = np.append(U, np.linalg.norm(X[k] - X[k-1]))
+    return U
+
+UA_gd_q3 = updateMagnitude(XA_gd_q3)
+UB_gd_q3 = updateMagnitude(XB_gd_q3)
+UC_gd_q3 = updateMagnitude(XC_gd_q3)
+
+plt.figure()
+plt.plot(np.arange(1, 81), UA_gd_q3, label='GD baseline')
+plt.plot(np.arange(1, 21), UA_newton, label='Newton')
+plt.xlabel('Iteration')
+plt.ylabel('Update magnitude')
+plt.title('Q3 (e): Benchmark A update magnitude')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure()
+plt.plot(np.arange(1, 81), UB_gd_q3, label='GD baseline')
+plt.plot(np.arange(1, 21), UB_newton, label='Newton')
+plt.xlabel('Iteration')
+plt.ylabel('Update magnitude')
+plt.title('Q3 (e): Benchmark B update magnitude')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+plt.figure()
+plt.plot(np.arange(1, 81), UC_gd_q3, label='GD baseline')
+plt.plot(np.arange(1, 21), UC_newton, label='Newton')
+plt.xlabel('Iteration')
+plt.ylabel('Update magnitude')
+plt.title('Q3 (e): Benchmark C update magnitude')
 plt.legend()
 plt.grid(True)
 plt.show()
